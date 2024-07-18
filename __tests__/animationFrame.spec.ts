@@ -1,7 +1,7 @@
 import AnimationFrame, {
   AnimationFrameOptions,
 } from "../src/core/animationFrame";
-import { TimeTrackingData } from "../src/core/animatorCore";
+import { TimeTrackingMethods } from "../src/core/animatorCore";
 import { EasingFunction } from "../src/utils/easingFunctions";
 
 // Mock easing function
@@ -10,12 +10,12 @@ const mockEasingFunction: EasingFunction = jest.fn((t) => t);
 // Mock callbacks
 const mockOnAnimatedValueChange = jest.fn();
 const mockOnAnimationComplete = jest.fn();
-const mockFetchTimeTrackingDataCallback = jest.fn(
-  (): TimeTrackingData => ({
-    isPaused: false,
-    elapsedTime: 0,
-    frameTime: 0,
-    currentTime: 0,
+const mockFetchTimeTrackingMethodsCallback = jest.fn(
+  (): TimeTrackingMethods => ({
+    getIsPaused: jest.fn(() => false),
+    getElapsedTime: jest.fn(() => 0),
+    getCurrentTime: jest.fn(() => Date.now()),
+    setCurrentTime: jest.fn((value: number) => {}),
   })
 );
 
@@ -27,7 +27,7 @@ const defaultOptions: AnimationFrameOptions = {
   easingFunction: mockEasingFunction,
   decimalPlaces: 2,
   startTimestamp: 0,
-  fetchTimeTrackingDataCallback: mockFetchTimeTrackingDataCallback,
+  fetchTimeTrackingMethodsCallback: mockFetchTimeTrackingMethodsCallback,
   onAnimatedValueChange: mockOnAnimatedValueChange,
   onAnimationComplete: mockOnAnimationComplete,
 };
@@ -84,14 +84,14 @@ describe("AnimationFrame", () => {
 
   it("should fetch time tracking data correctly", () => {
     const animationFrame = new AnimationFrame(defaultOptions);
-    const timeTrackingData = animationFrame.fetchTimeTrackingData();
+    const timeTrackingData = animationFrame.fetchTimeTrackingMethods();
 
     expect(timeTrackingData).toEqual({
-      isPaused: false,
-      elapsedTime: 0,
-      frameTime: 0,
-      currentTime: 0,
+      getIsPaused: expect.any(Function),
+      getElapsedTime: expect.any(Function),
+      getCurrentTime: expect.any(Function),
+      setCurrentTime: expect.any(Function),
     });
-    expect(mockFetchTimeTrackingDataCallback).toHaveBeenCalled();
+    expect(mockFetchTimeTrackingMethodsCallback).toHaveBeenCalled();
   });
 });
