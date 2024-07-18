@@ -71,8 +71,8 @@ describe("RequestAnimationFrame", () => {
   });
 
   it("should throw an error if trying to remove a non-existing animation frame", () => {
-    expect(() => rAF.removeFromQueue(999, jest.fn())).toThrow(
-      "Cannot remove animationFrame: frame with id 999 does not exist."
+    expect(() => rAF.removeFromQueue(888, jest.fn())).toThrow(
+      "Cannot remove animationFrame: frame with id 888 does not exist."
     );
   });
 
