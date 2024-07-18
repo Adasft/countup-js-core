@@ -27,15 +27,17 @@ export default class RequestAnimationFrame {
     }
 
     for (const animationFrame of this._animationFrameQueue) {
-      const timeTrackingData = animationFrame.fetchTimeTrackingData();
+      const timeTrackingMethods = animationFrame.fetchTimeTrackingMethods();
 
-      if (timeTrackingData.isPaused) {
+      if (timeTrackingMethods.getIsPaused()) {
         continue;
       }
 
-      timeTrackingData.currentTime = currentTime - timeTrackingData.elapsedTime;
+      timeTrackingMethods.setCurrentTime(
+        currentTime - timeTrackingMethods.getElapsedTime()
+      );
 
-      animationFrame.run(timeTrackingData.currentTime);
+      animationFrame.run(timeTrackingMethods.getCurrentTime());
     }
 
     this._requestAnimationFrameId = requestAnimationFrame(
@@ -45,7 +47,7 @@ export default class RequestAnimationFrame {
     );
   }
 
-  public runRequestAnimationFrame() {
+  public runAnimationFrame() {
     if (this._requestAnimationFrameId === null) {
       this._requestAnimationFrameId = requestAnimationFrame(
         (currentTime: number) => {
@@ -55,12 +57,21 @@ export default class RequestAnimationFrame {
     }
   }
 
+  public cancelAnimationFrame(): boolean {
+    if (!this._requestAnimationFrameId) {
+      return false;
+    }
+    cancelAnimationFrame(this._requestAnimationFrameId);
+    this._requestAnimationFrameId = null;
+    return true;
+  }
+
   public enqueueFrameAndRunAnimationFrame(animationFrame: AnimationFrame) {
     if (animationFrame) {
       this._animationFrameQueue.push(animationFrame);
     }
 
-    this.runRequestAnimationFrame();
+    this.runAnimationFrame();
   }
 
   public removeFromQueue(id: number, callback: () => void) {
@@ -77,16 +88,10 @@ export default class RequestAnimationFrame {
   }
 
   public cancelAnimationIfQueueEmpty() {
-    if (!this._animationFrameQueue.length && this._requestAnimationFrameId) {
-      cancelAnimationFrame(this._requestAnimationFrameId);
-      this._requestAnimationFrameId = null;
-      return true;
+    if (!this.queueSize()) {
+      return this.cancelAnimationFrame();
     }
     return false;
-  }
-
-  public emptyQueue() {
-    this._animationFrameQueue = [];
   }
 
   public queueSize() {
