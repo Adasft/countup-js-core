@@ -6,15 +6,15 @@ export type AnimationFrameOptions = Required<AnimationCommonOptions> & {
   easingFunction: EasingFunction;
   fetchTimeTrackingMethodsCallback: () => TimeTrackingMethods; //// isPaused, currentTime, elapsedTime, animationFrame
   onAnimatedValueChange: (currentValue: number) => void;
-  onAnimationComplete: (id: number) => void;
+  onAnimationComplete: () => void;
 };
 
-export type AnimationFrameUpdatedOptions = Partial<
-  Omit<
-    AnimationFrameOptions,
-    "startValue" | "startTimestamp" | "onAnimatedValueChange" | "onAnimationEnd"
-  >
->;
+export type AnimationFrameUpdatedOptions = {
+  end: number;
+  duration: number;
+  easingFunction: EasingFunction;
+  decimalPlaces: number;
+};
 
 export default class AnimationFrame {
   public static currentAnimationFrameId: number = 0;
@@ -59,7 +59,7 @@ export default class AnimationFrame {
     this._options.onAnimatedValueChange(currentValue);
 
     if (progress >= 1) {
-      this._options.onAnimationComplete(this.id);
+      this._options.onAnimationComplete();
     }
   }
 
