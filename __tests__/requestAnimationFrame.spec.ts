@@ -17,11 +17,11 @@ const mockEasingFunction = jest.fn((t) => t);
 // Mock callback functions for AnimationFrame
 const mockOnAnimatedValueChange = jest.fn();
 const mockOnAnimationComplete = jest.fn();
-const mockFetchTimeTrackingDataCallback = jest.fn(() => ({
-  isPaused: false,
-  elapsedTime: 0,
-  frameTime: 0,
-  currentTime: 0,
+const mockFetchTimeTrackingMethodsCallback = jest.fn(() => ({
+  getIsPaused: jest.fn(),
+  getElapsedTime: jest.fn(),
+  getCurrentTime: jest.fn(),
+  setCurrentTime: jest.fn(),
 }));
 
 // Default options for AnimationFrame
@@ -32,7 +32,7 @@ const defaultAnimationOptions = {
   easingFunction: mockEasingFunction,
   decimalPlaces: 2,
   startTimestamp: 0,
-  fetchTimeTrackingDataCallback: mockFetchTimeTrackingDataCallback,
+  fetchTimeTrackingMethodsCallback: mockFetchTimeTrackingMethodsCallback,
   onAnimatedValueChange: mockOnAnimatedValueChange,
   onAnimationComplete: mockOnAnimationComplete,
 };
@@ -109,12 +109,12 @@ describe("RequestAnimationFrame", () => {
   });
 
   it("should return the current frame id", () => {
-    rAF.runRequestAnimationFrame();
+    rAF.runAnimationFrame();
     expect(rAF.getFrameId()).not.toBeNull();
   });
 
   it("should reset the frame id", () => {
-    rAF.runRequestAnimationFrame();
+    rAF.runAnimationFrame();
     rAF.resetFrameId();
     expect(rAF.getFrameId()).toBeNull();
   });
