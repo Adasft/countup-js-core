@@ -1,0 +1,27 @@
+{
+  "name": "count-up",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "type": "module",
+  "scripts": {
+    "clean": "rimraf dist",
+    "build:types": "tsc --emitDeclarationOnly",
+    "build:rollup": "rollup -c",
+    "build": "npm run clean && npm run build:types && npm run build:rollup",
+    "watch": "npm-run-all --parallel watch:types watch:rollup",
+    "watch:types": "tsc --watch --emitDeclarationOnly",
+    "watch:rollup": "rollup -c --watch"
+  },
+  "author": "Adaft",
+  "license": "MIT",
+  "description": "",
+  "devDependencies": {
+    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-typescript": "^11.1.6",
+    "npm-run-all": "^4.1.5",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.18.1",
+    "tslib": "^2.6.3",
+    "typescript": "^5.5.3"
+  }
+}
