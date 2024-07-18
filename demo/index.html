@@ -17,21 +17,35 @@
         UtilityEasingFunctions,
       } from "../dist/countup-js-core.js";
 
-      const $counter = document.querySelector("#counter");
-      new AnimatorCore(new RequestAnimationFrame(), {
-        start: 0,
-        end: 1000,
-        duration: 10,
+      const $numbers = document.querySelector("#numbers");
+      const animator = new AnimatorCore(new RequestAnimationFrame(), {
+        start: -50,
+        end: 90.334,
+        duration: 5,
         autoPlay: true,
         decimalPlaces: 3,
-        easingFunction: UtilityEasingFunctions.easeInOutQuint,
         onValueChange: (currentValue) => {
-          $counter.textContent = currentValue;
+          $numbers.textContent = currentValue;
         },
       });
+
+      window.playCounter = () => {
+        animator.play();
+      };
+
+      window.pauseCounter = () => {
+        animator.pause();
+      };
+      window.resumeCounter = () => {
+        animator.resume();
+      };
     </script>
   </head>
   <body>
-    <code id="counter"></code>
+    <code id="numbers"></code>
+    <br />
+    <button onclick="window.playCounter()">Play</button>
+    <button onclick="window.pauseCounter()">Pause</button>
+    <button onclick="window.resumeCounter()">Resume</button>
   </body>
 </html>
