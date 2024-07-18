@@ -1,5 +1,8 @@
 import AnimationFrame from "./animationFrame";
-import { cancelAnimationFrame } from "../utils/polyfills";
+import {
+  requestAnimationFrame,
+  cancelAnimationFrame,
+} from "../utils/polyfills";
 
 export default class RequestAnimationFrame {
   private static _INSTANCE: RequestAnimationFrame;
@@ -80,6 +83,10 @@ export default class RequestAnimationFrame {
       return true;
     }
     return false;
+  }
+
+  public emptyQueue() {
+    this._animationFrameQueue = [];
   }
 
   public queueSize() {
