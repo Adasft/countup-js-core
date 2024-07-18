@@ -26,11 +26,11 @@ export type AnimatorCoreOptions = AnimationCommonOptions & {
   onReset?: () => void;
 };
 
-export type TimeTrackingData = {
-  isPaused: boolean;
-  elapsedTime: number;
-  frameTime: number;
-  currentTime: number;
+export type TimeTrackingMethods = {
+  getIsPaused: () => boolean;
+  getElapsedTime: () => number;
+  getCurrentTime: () => number;
+  setCurrentTime: (value: number) => void;
 };
 
 export default class AnimatorCore {
@@ -48,11 +48,12 @@ export default class AnimatorCore {
   private _interruptTimestamp: number;
   private _animationFrame: AnimationFrame | null;
   private _isCountingStarted: boolean;
-  private _timeTrackingData: TimeTrackingData;
+  private _currentTime: number;
+  private _elapsedTime: number;
 
   public onValueChange: (value: number | string) => void;
   public onComplete: () => void;
-  public onStart: (error?: Error | null) => void;
+  public onPlay: (error?: Error | null) => void;
   public onReset: () => void;
   public isPaused: boolean = true;
 
@@ -89,19 +90,9 @@ export default class AnimatorCore {
     this._interruptTimestamp = 0;
     this._animationFrame = null;
     this._isCountingStarted = false;
-    this._timeTrackingData = {
-      isPaused: false,
-      elapsedTime: 0,
-      frameTime: 0,
-
-      set currentTime(time: number) {
-        this.frameTime = time;
-      },
-
-      get currentTime() {
-        return this.frameTime;
-      },
-    };
+    this.isPaused = false;
+    this._elapsedTime = 0;
+    this._currentTime = 0;
 
     this._start = start;
     this._end = end;
@@ -117,7 +108,7 @@ export default class AnimatorCore {
     this._middleware = [...(middleware ?? [])];
     this.onValueChange = onValueChange ?? noop;
     this.onComplete = onComplete ?? noop;
-    this.onStart = onPlay ?? noop;
+    this.onPlay = onPlay ?? noop;
     this.onReset = onReset ?? noop;
 
     if (autoPlay) {
@@ -227,46 +218,58 @@ export default class AnimatorCore {
       return;
     }
 
-    this._animationFrame = new AnimationFrame({
-      startTimestamp: performance.now(),
-      start: this._start,
-      end: this._end,
-      duration: this._duration * 1000,
-      easingFunction: this._easingFunction,
-      decimalPlaces: this._decimalPlaces,
-      fetchTimeTrackingDataCallback: () => {
-        return this._timeTrackingData;
-      },
-      onAnimatedValueChange: (currentValue: number) => {
-        let modifiedValue: number | string = currentValue;
-        if (this._middleware.length) {
-          for (const middleware of this._middleware) {
-            modifiedValue = middleware(currentValue);
+    if (this.isPaused) {
+      this._elapsedTime += performance.now() - this._interruptTimestamp;
+      this._rAF.decreasePausedCounter();
+      this._rAF.runAnimationFrame();
+    } else {
+      this._animationFrame = new AnimationFrame({
+        startTimestamp: performance.now(),
+        start: this._start,
+        end: this._end,
+        duration: this._duration * 1000,
+        easingFunction: this._easingFunction,
+        decimalPlaces: this._decimalPlaces,
+        fetchTimeTrackingMethodsCallback: () => {
+          return {
+            getIsPaused: () => this.isPaused,
+            getElapsedTime: () => this._elapsedTime,
+            getCurrentTime: () => this._currentTime,
+            setCurrentTime: (value: number) => (this._currentTime = value),
+          };
+        },
+        onAnimatedValueChange: (currentValue: number) => {
+          let modifiedValue: number | string = currentValue;
+          if (this._middleware.length) {
+            for (const middleware of this._middleware) {
+              modifiedValue = middleware(currentValue);
+            }
           }
-        }
-        this.onValueChange(modifiedValue);
-      },
-      onAnimationComplete: (id) => {
-        this.onComplete();
-        this._isCountingStarted = false;
-        this._rAF.removeFromQueue(id, () => {
-          this._animationFrame = null;
-        });
-      },
-    });
+          this.onValueChange(modifiedValue);
+        },
+        onAnimationComplete: (id) => {
+          this.onComplete();
+          this._isCountingStarted = false;
+          this._rAF.removeFromQueue(id, () => {
+            this._animationFrame = null;
+          });
+        },
+      });
 
-    this._rAF.decreasePausedCounter();
-    this._rAF.enqueueFrameAndRunAnimationFrame(this._animationFrame);
+      this._rAF.decreasePausedCounter();
+      this._rAF.enqueueFrameAndRunAnimationFrame(this._animationFrame);
 
-    if (callback) {
-      this.onStart = callback;
+      this._elapsedTime = 0;
+      this._currentTime = 0;
+      this._interruptTimestamp = 0;
     }
 
-    this.onStart();
-    this._timeTrackingData.isPaused = false;
-    this._timeTrackingData.elapsedTime = 0;
-    this._timeTrackingData.currentTime = 0;
-    this._interruptTimestamp = 0;
+    if (callback) {
+      this.onPlay = callback;
+    }
+
+    this.onPlay();
+    this.isPaused = false;
     this._isCountingStarted = true;
   }
 
@@ -281,42 +284,29 @@ export default class AnimatorCore {
       updatedOptions.easingFunction ?? this._easingFunction;
     this._decimalPlaces = updatedOptions.decimalPlaces ?? this._decimalPlaces;
 
-    this._animationFrame.update(
-      updatedOptions,
-      this._timeTrackingData.currentTime
-    );
+    this._animationFrame.update(updatedOptions, this._currentTime);
   }
 
   public pause() {
     const frameId = this._rAF.getFrameId();
-    if (!this._timeTrackingData.isPaused && frameId) {
+    if (!this.isPaused && frameId) {
       this._rAF.increasePausedCounter();
 
       if (this._rAF.getPausedCounter() >= this._rAF.queueSize()) {
-        cancelAnimationFrame(frameId);
-        this._rAF.resetFrameId();
+        this._rAF.cancelAnimationFrame();
       }
 
       this._interruptTimestamp = performance.now();
-      this._timeTrackingData.isPaused = true;
-    }
-  }
-
-  public resume() {
-    if (this._timeTrackingData.isPaused) {
-      this._timeTrackingData.isPaused = false;
-      this._timeTrackingData.elapsedTime +=
-        performance.now() - this._interruptTimestamp;
-      this._rAF.decreasePausedCounter();
-      this._rAF.runRequestAnimationFrame();
+      this.isPaused = true;
+      this._isCountingStarted = false;
     }
   }
 
   public reset() {
     this.onReset();
-    this._timeTrackingData.isPaused = false;
-    this._timeTrackingData.elapsedTime = 0;
-    this._timeTrackingData.currentTime = 0;
+    this.isPaused = false;
+    this._elapsedTime = 0;
+    this._currentTime = 0;
     this._interruptTimestamp = 0;
     this._isCountingStarted = false;
 
