@@ -111,8 +111,8 @@ export default class AnimatorCore {
       easingFunction ?? AnimatorCore.DEFAULT_EASING_FUNCTION
     );
     this._decimalPlaces = Math.min(
-      decimalPlaces ?? AnimatorCore.MAX_DECIMAL_PLACES,
-      5
+      decimalPlaces ?? 0,
+      AnimatorCore.MAX_DECIMAL_PLACES
     );
     this._middleware = [...(middleware ?? [])];
     this.onValueChange = onValueChange ?? noop;
