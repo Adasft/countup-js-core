@@ -1,10 +1,10 @@
 import { EasingFunction } from "../utils/easingFunctions";
-import { AnimationCommonOptions, TimeTrackingData } from "./animatorCore";
+import { AnimationCommonOptions, TimeTrackingMethods } from "./animatorCore";
 
 export type AnimationFrameOptions = Required<AnimationCommonOptions> & {
   startTimestamp: number;
   easingFunction: EasingFunction;
-  fetchTimeTrackingDataCallback: () => TimeTrackingData; //// isPaused, currentTime, elapsedTime, animationFrame
+  fetchTimeTrackingMethodsCallback: () => TimeTrackingMethods; //// isPaused, currentTime, elapsedTime, animationFrame
   onAnimatedValueChange: (currentValue: number) => void;
   onAnimationComplete: (id: number) => void;
 };
@@ -90,7 +90,7 @@ export default class AnimationFrame {
     this.run(currentTime);
   }
 
-  public fetchTimeTrackingData() {
-    return this._options.fetchTimeTrackingDataCallback();
+  public fetchTimeTrackingMethods() {
+    return this._options.fetchTimeTrackingMethodsCallback();
   }
 }
