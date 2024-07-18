@@ -1,4 +1,4 @@
-import { EasingFunction } from "../countUp/countUp";
+import { EasingFunction } from "../utils/easingFunctions";
 import { AnimationCommonOptions, TimeTrackingData } from "./animatorCore";
 
 type AnimationFrameOptions = Required<AnimationCommonOptions> & {
