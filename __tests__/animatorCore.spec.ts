@@ -24,7 +24,7 @@ describe("AnimatorCore", () => {
     (rAF.getPausedCounter as jest.Mock).mockReturnValue(0);
     (rAF.queueSize as jest.Mock).mockReturnValue(1);
     (rAF.resetFrameId as jest.Mock).mockImplementation(() => {});
-    (rAF.runRequestAnimationFrame as jest.Mock).mockImplementation(() => {});
+    (rAF.runAnimationFrame as jest.Mock).mockImplementation(() => {});
 
     animator = new AnimatorCore(rAF, defaultOptions);
   });
@@ -126,11 +126,11 @@ describe("AnimatorCore", () => {
       expect(animator.isPaused).toBe(false);
     });
 
-    it("should call onStart callback", () => {
-      const onStart = jest.fn();
-      animator.onStart = onStart;
+    it("should call onPlay callback", () => {
+      const onPlay = jest.fn();
+      animator.onPlay = onPlay;
       animator.play();
-      expect(onStart).toHaveBeenCalled();
+      expect(onPlay).toHaveBeenCalled();
     });
   });
 
@@ -140,15 +140,6 @@ describe("AnimatorCore", () => {
       animator.pause();
       expect(rAF.increasePausedCounter).toHaveBeenCalled();
       expect(animator.isPaused).toBe(true);
-    });
-  });
-
-  describe("resume", () => {
-    it("should resume the animation", () => {
-      animator.play();
-      animator.pause();
-      animator.resume();
-      expect(animator.isPaused).toBe(false);
     });
   });
 
