@@ -1,7 +1,7 @@
 import { EasingFunction } from "../utils/easingFunctions";
 import { AnimationCommonOptions, TimeTrackingData } from "./animatorCore";
 
-type AnimationFrameOptions = Required<AnimationCommonOptions> & {
+export type AnimationFrameOptions = Required<AnimationCommonOptions> & {
   startTimestamp: number;
   easingFunction: EasingFunction;
   fetchTimeTrackingDataCallback: () => TimeTrackingData; //// isPaused, currentTime, elapsedTime, animationFrame
