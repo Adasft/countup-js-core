@@ -74,11 +74,11 @@ describe("AnimationFrame", () => {
 
   it("should update options correctly and run animation", () => {
     const animationFrame = new AnimationFrame(defaultOptions);
-    const newOptions = { end: 200, duration: 2000 };
+    const newOptions = { end: 200, duration: 5 };
     animationFrame.update(newOptions, 500);
 
     expect(animationFrame["_options"].end).toBe(200);
-    expect(animationFrame["_options"].duration).toBe(2000);
+    expect(animationFrame["_options"].duration).toBe(5);
     expect(mockOnAnimatedValueChange).toHaveBeenCalledWith(50);
   });
 
