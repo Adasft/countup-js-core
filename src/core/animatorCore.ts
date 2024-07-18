@@ -334,39 +334,3 @@ export default class AnimatorCore {
     this._middleware.push(middleware);
   }
 }
-
-/* Methods
- * connect(callback?)
- * disconnect(callback?)
- * start(callback?) - init counter
- * pause() - pause counter
- * resume() - resume counter
- * reset() - reset counter
- * update() - update counter
- *
- * Props and options
- * id?: string
- * initialValue: number
- * targetValue: number
- * duration: number
- * fontVariantNumeric?: "normal" | "slashed-zero" | "tabular-nums" | "oldstyle-nums" = "tabular-nums"
- * enableScrollSpy?: boolean = false
- * onConnectedCallback?: () => void
- * onDisconnectedCallback?: () => void
- * onCompletedCallback?: () => void
- * onStartCallback?: () => void
- *
- * options
- * parent?: HTMLElement
- *
- * CountUp.define({
- *  hooks: {
- *    onConnected1(){}
- * }
- * })
- *
- * CountUp.create({ id: "my-count-1" })
- *
- *
- *
- */
