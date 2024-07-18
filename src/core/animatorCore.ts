@@ -1,5 +1,5 @@
 import AnimationFrame, { AnimationFrameUpdatedOptions } from "./animationFrame";
-import { cancelAnimationFrame, noop } from "../utils/polyfills";
+import { noop } from "../utils/polyfills";
 import UtilityEasingFunctions, {
   EasingFunction,
   EasingUtil,
@@ -15,14 +15,14 @@ export type AnimationCommonOptions = {
   decimalPlaces?: number;
 };
 
-export type Middleware = (currentValue: number) => number | string;
+export type Middleware = (currentValue: number | string) => number | string;
 
 export type AnimatorCoreOptions = AnimationCommonOptions & {
   autoPlay?: boolean;
   middleware?: Middleware[];
   onValueChange?: (value: number | string) => void;
   onComplete?: () => void;
-  onPlay?: (error?: Error | null) => void;
+  onPlay?: () => void;
   onReset?: () => void;
 };
 
@@ -51,10 +51,10 @@ export default class AnimatorCore {
   private _currentTime: number;
   private _elapsedTime: number;
 
-  public onValueChange: (value: number | string) => void;
-  public onComplete: () => void;
-  public onPlay: (error?: Error | null) => void;
-  public onReset: () => void;
+  private readonly _onValueChange: (value: number | string) => void;
+  private readonly _onComplete: () => void;
+  private _onPlay: (callback?: () => void) => void;
+  private _onReset: (callback?: () => void) => void;
   public isPaused: boolean = true;
 
   public readonly version = "1.0.0";
@@ -106,10 +106,42 @@ export default class AnimatorCore {
       AnimatorCore.MAX_DECIMAL_PLACES
     );
     this._middleware = [...(middleware ?? [])];
-    this.onValueChange = onValueChange ?? noop;
-    this.onComplete = onComplete ?? noop;
-    this.onPlay = onPlay ?? noop;
-    this.onReset = onReset ?? noop;
+    this._onValueChange = (value) => {
+      const callback = onValueChange ?? noop;
+      let modifiedValue: number | string = value;
+      if (this._middleware.length) {
+        for (const middleware of this._middleware) {
+          modifiedValue = middleware(modifiedValue);
+
+          if (typeof modifiedValue === "number") {
+            modifiedValue = modifiedValue.toFixed(this._decimalPlaces);
+          } else if (typeof modifiedValue !== "string") {
+            throw new Error(
+              "The value returned by the middleware is invalid. It must be a number or a string."
+            );
+          }
+        }
+      }
+      callback(modifiedValue);
+    };
+
+    this._onComplete = () => {
+      if (!this._animationFrame) {
+        return;
+      }
+
+      const onCompleteCallback = onComplete ?? noop;
+      const id = this._animationFrame.id;
+      this._isCountingStarted = false;
+      this._rAF.removeFromQueue(id, () => {
+        this._animationFrame = null;
+      });
+
+      onCompleteCallback();
+    };
+
+    this._onPlay = onPlay ?? noop;
+    this._onReset = onReset ?? noop;
 
     if (autoPlay) {
       this.play();
@@ -239,20 +271,10 @@ export default class AnimatorCore {
           };
         },
         onAnimatedValueChange: (currentValue: number) => {
-          let modifiedValue: number | string = currentValue;
-          if (this._middleware.length) {
-            for (const middleware of this._middleware) {
-              modifiedValue = middleware(currentValue);
-            }
-          }
-          this.onValueChange(modifiedValue);
+          this._onValueChange(currentValue);
         },
-        onAnimationComplete: (id) => {
-          this.onComplete();
-          this._isCountingStarted = false;
-          this._rAF.removeFromQueue(id, () => {
-            this._animationFrame = null;
-          });
+        onAnimationComplete: () => {
+          this._onComplete();
         },
       });
 
@@ -265,10 +287,10 @@ export default class AnimatorCore {
     }
 
     if (callback) {
-      this.onPlay = callback;
+      this._onPlay = callback;
     }
 
-    this.onPlay();
+    this._onPlay();
     this.isPaused = false;
     this._isCountingStarted = true;
   }
@@ -302,8 +324,13 @@ export default class AnimatorCore {
     }
   }
 
-  public reset() {
-    this.onReset();
+  public reset(callback?: () => void) {
+    if (callback) {
+      this._onReset = callback;
+    }
+
+    this._onValueChange(this._start);
+    this._onReset();
     this.isPaused = false;
     this._elapsedTime = 0;
     this._currentTime = 0;
