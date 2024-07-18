@@ -5,17 +5,17 @@ export default {
   input: "src/index.ts",
   output: [
     {
-      dir: "dist",
+      file: "dist/countup-js-core.js",
       format: "es",
     },
     {
-      file: "dist/index.umd.min.js",
+      file: "dist/countup-js-core.umd.min.js",
       format: "umd",
       name: "CountUp",
       plugins: [terser()],
     },
     {
-      file: "dist/index.min.js",
+      file: "dist/countup-js-core.min.js",
       format: "es",
       plugins: [terser()],
     },
