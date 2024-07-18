@@ -1,5 +1,3 @@
-// Importa la clase y las dependencias necesarias
-// import jest, {describe} from "jest"
 import AnimatorCore, { AnimatorCoreOptions } from "../src/core/animatorCore";
 import RequestAnimationFrame from "../src/core/requestAnimationFrame";
 import { EasingFunction } from "../src/utils/easingFunctions";
