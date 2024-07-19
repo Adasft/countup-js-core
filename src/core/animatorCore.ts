@@ -6,6 +6,7 @@ import UtilityEasingFunctions, {
   getEasingFunctionByName,
 } from "../utils/easingFunctions";
 import RequestAnimationFrame from "./requestAnimationFrame";
+import TypeChecker from "../utils/typeChecking";
 
 export type AnimationCommonOptions = {
   start: number;
@@ -72,6 +73,8 @@ export default class AnimatorCore {
       );
     }
 
+    this._validateOptions(options);
+
     const {
       start,
       end,
@@ -84,7 +87,7 @@ export default class AnimatorCore {
       onComplete,
       onPlay,
       onReset,
-    } = this._validateOptions(options);
+    } = options;
 
     this._rAF = rAF;
     this._interruptTimestamp = 0;
@@ -113,13 +116,22 @@ export default class AnimatorCore {
         for (const middleware of this._middleware) {
           modifiedValue = middleware(modifiedValue);
 
-          if (typeof modifiedValue === "number") {
-            modifiedValue = modifiedValue.toFixed(this._decimalPlaces);
-          } else if (typeof modifiedValue !== "string") {
-            throw new Error(
-              "The value returned by the middleware is invalid. It must be a number or a string."
+          if (
+            typeof modifiedValue !== "string" &&
+            typeof modifiedValue !== "number"
+          ) {
+            console.error(
+              new Error(
+                `The value returned by the middleware is invalid: '${middleware}'. It must be a number or a string.`
+              )
             );
+            this.pause();
+            return;
           }
+        }
+
+        if (typeof modifiedValue === "number") {
+          modifiedValue = modifiedValue.toFixed(this._decimalPlaces);
         }
       }
       callback(modifiedValue);
@@ -165,65 +177,19 @@ export default class AnimatorCore {
       onReset,
     } = options;
 
-    if (
-      typeof start !== "number" ||
-      typeof end !== "number" ||
-      typeof duration !== "number"
-    ) {
-      throw new Error(
-        "Invalid options: 'start', 'end', and 'duration' must be numbers."
-      );
-    }
+    TypeChecker.start.required().assert(start);
+    TypeChecker.end.required().assert(end);
+    TypeChecker.duration.required().assert(duration);
 
-    if (
-      easingFunction !== undefined &&
-      typeof easingFunction !== "function" &&
-      typeof easingFunction !== "string"
-    ) {
-      throw new Error(
-        "Invalid options: 'easingFunction' must be a function or a string."
-      );
-    }
+    TypeChecker.easingFunction.assert(easingFunction);
+    TypeChecker.decimalPlaces.assert(decimalPlaces);
+    TypeChecker.autoPlay.assert(autoPlay);
+    TypeChecker.middleware.assert(middleware);
 
-    if (decimalPlaces !== undefined && typeof decimalPlaces !== "number") {
-      throw new Error("Invalid options: 'decimalPlaces' must be a number.");
-    }
-
-    if (autoPlay !== undefined && typeof autoPlay !== "boolean") {
-      throw new Error("Invalid options: 'autoPlay' must be a boolean.");
-    }
-
-    if (middleware !== undefined && !Array.isArray(middleware)) {
-      throw new Error(
-        "Invalid options: 'middleware' must be an array of functions."
-      );
-    }
-
-    if (middleware) {
-      middleware.forEach((mw, index) => {
-        if (typeof mw !== "function") {
-          throw new Error(
-            `Invalid middleware at index ${index}: must be a function.`
-          );
-        }
-      });
-    }
-
-    if (onValueChange !== undefined && typeof onValueChange !== "function") {
-      throw new Error("Invalid options: 'onValueChange' must be a function.");
-    }
-
-    if (onComplete !== undefined && typeof onComplete !== "function") {
-      throw new Error("Invalid options: 'onComplete' must be a function.");
-    }
-
-    if (onPlay !== undefined && typeof onPlay !== "function") {
-      throw new Error("Invalid options: 'onPlay' must be a function.");
-    }
-
-    if (onReset !== undefined && typeof onReset !== "function") {
-      throw new Error("Invalid options: 'onReset' must be a function.");
-    }
+    TypeChecker.onValueChange.assert(onValueChange);
+    TypeChecker.onComplete.assert(onComplete);
+    TypeChecker.onPlay.assert(onPlay);
+    TypeChecker.onReset.assert(onReset);
 
     return options;
   }
@@ -296,16 +262,33 @@ export default class AnimatorCore {
   }
 
   public update(updatedOptions: AnimationFrameUpdatedOptions) {
+    // Check if there is an animation frame before proceeding
     if (!this._animationFrame) {
       return;
     }
 
-    this._end = updatedOptions.end ?? this._end;
-    this._duration = updatedOptions.duration ?? this._duration;
-    this._easingFunction =
-      updatedOptions.easingFunction ?? this._easingFunction;
-    this._decimalPlaces = updatedOptions.decimalPlaces ?? this._decimalPlaces;
+    const { end, duration, decimalPlaces, easingFunction } = updatedOptions;
 
+    TypeChecker.end.assert(end);
+    TypeChecker.duration.assert(duration);
+    TypeChecker.decimalPlaces.assert(decimalPlaces);
+    TypeChecker.easingFunction.assert(easingFunction);
+    // Update options with supplied values ​​or keep current ones
+    this._end = end ?? this._end;
+    this._decimalPlaces = decimalPlaces ?? this._decimalPlaces;
+
+    // If a duration is given, update it and convert to milliseconds
+    if (duration !== undefined) {
+      this._duration = duration;
+      updatedOptions.duration = duration * 1000;
+    }
+
+    if (updatedOptions.easingFunction) {
+      this._easingFunction = updatedOptions.easingFunction =
+        this._getEasingFunction(easingFunction);
+    }
+
+    // Update the animation frame with the changed options
     this._animationFrame.update(updatedOptions, this._currentTime);
   }
 
