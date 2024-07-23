@@ -1,5 +1,5 @@
-import AnimatorCore from "./core/animatorCore";
+import NumericalAnimatorCore from "./core/numericalAnimatorCore";
 import RequestAnimationFrame from "./core/requestAnimationFrame";
 import UtilityEasingFunctions from "./utils/easingFunctions";
 
-export { AnimatorCore, RequestAnimationFrame, UtilityEasingFunctions };
+export { NumericalAnimatorCore, RequestAnimationFrame, UtilityEasingFunctions };
