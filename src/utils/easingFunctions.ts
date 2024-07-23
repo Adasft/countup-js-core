@@ -1,17 +1,4 @@
-export type EasingFunction = (t: number) => number;
-
-export type EasingUtil = {
-  linear: EasingFunction;
-  easeOutCubic: EasingFunction;
-  easeInQuad: EasingFunction;
-  easeOutQuad: EasingFunction;
-  easeInOutQuad: EasingFunction;
-  easeOutSine: EasingFunction;
-  easeInOutSine: EasingFunction;
-  easeInOutQuart: EasingFunction;
-  easeInOutQuint: EasingFunction;
-  easeOutExpo: EasingFunction;
-};
+import { EasingFunction, EasingUtil } from "../types/types";
 
 const UtilityEasingFunctions: EasingUtil = Object.freeze({
   linear: (t) => t,
