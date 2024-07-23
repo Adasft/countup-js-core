@@ -1,20 +1,8 @@
-import { EasingFunction } from "../utils/easingFunctions";
-import { AnimationCommonOptions, TimeTrackingMethods } from "./animatorCore";
-
-export type AnimationFrameOptions = Required<AnimationCommonOptions> & {
-  startTimestamp: number;
-  easingFunction: EasingFunction;
-  fetchTimeTrackingMethodsCallback: () => TimeTrackingMethods; //// isPaused, currentTime, elapsedTime, animationFrame
-  onAnimatedValueChange: (currentValue: number) => void;
-  onAnimationComplete: () => void;
-};
-
-export type AnimationFrameUpdatedOptions = {
-  end: number;
-  duration: number;
-  easingFunction: EasingFunction;
-  decimalPlaces: number;
-};
+import {
+  AnimationFrameOptions,
+  AnimationFrameUpdatedOptions,
+  EasingFunction,
+} from "../types/types";
 
 export default class AnimationFrame {
   public static currentAnimationFrameId: number = 0;
