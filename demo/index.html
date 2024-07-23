@@ -12,8 +12,7 @@
     </style>
     <script type="module">
       import {
-        AnimatorCore,
-        RequestAnimationFrame,
+        NumericalAnimatorCore,
         UtilityEasingFunctions,
       } from "../dist/countup-js-core.min.js";
 
@@ -24,19 +23,21 @@
       }).format;
 
       const $numbers = document.querySelector("#numbers");
-      const animator = new AnimatorCore(new RequestAnimationFrame(), {
+      const animator = new NumericalAnimatorCore({
         start: 10344000,
         end: 90.334,
-        duration: 5000,
-        autoPlay: true,
-        decimalPlaces: 3,
+        duration: 10,
+        // autoPlay: true,
+        decimalPlaces: 2,
         easingFunction: UtilityEasingFunctions.easeOutSine,
-        onValueChange: (currentValue) => {
+        onChange: (currentValue) => {
           $numbers.textContent = currentValue;
         },
       });
 
-      animator.addMiddleware((value) => format(value));
+      animator.errors.forEach((error) => console.error(error));
+
+      // animator.addMiddleware((value) => format(value));
 
       window.playAnimator = () => {
         animator.play();
@@ -51,18 +52,18 @@
 
       window.updateAnimator = () => {
         animator.update({
-          duration: 5,
+          duration: 1,
         });
       };
 
       const $numbers2 = document.querySelector("#numbers2");
-      const animator2 = new AnimatorCore(new RequestAnimationFrame(), {
+      const animator2 = new NumericalAnimatorCore({
         start: 0,
         end: 100,
-        duration: 10,
-        // autoPlay: true,
+        duration: 30,
+        autoPlay: true,
         decimalPlaces: 4,
-        easingFunction: "easeInOutQuint",
+        easingFunction: "easeInOutQuart",
         middleware: [
           (value) =>
             Intl.NumberFormat(undefined, {
@@ -71,12 +72,23 @@
               maximumFractionDigits: 4,
             }).format(value),
         ],
-        onValueChange: (currentValue) => {
+        onChange: (currentValue) => {
           $numbers2.textContent = currentValue;
+        },
+        onPlay: () => {
+          console.log("initial Play");
         },
       });
 
+      animator2.errors.forEach((error) => console.error(error));
+
+      window.animator2 = animator2;
+
       animator2.addMiddleware((value) => `Value: ${value}`);
+
+      animator2.emitter.on("play", () => {
+        console.log("play");
+      });
 
       window.playAnimator2 = () => {
         animator2.play();
@@ -96,8 +108,12 @@
         animator2.update({
           end: 10,
           easingFunction: "linear",
-          duration: 1,
+          duration: 2,
         });
+      };
+
+      window.stop = () => {
+        animator2.stop();
       };
     </script>
   </head>
@@ -117,5 +133,6 @@
     <button onclick="window.pauseAnimator2()">Pause</button>
     <button onclick="window.resetAnimator2()">Reset</button>
     <button onclick="window.updateAnimator2()">Update</button>
+    <button onclick="window.stop()">Stop</button>
   </body>
 </html>
