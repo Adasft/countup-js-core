@@ -1,70 +1,152 @@
-class Checker {
-  private _isRequired: boolean = false;
+import {
+  NumericalAnimatorCoreOptions,
+  ErrorList,
+  RequiredNumericalAnimatorCoreOptions,
+  TypeConstructor,
+  TypeScheme,
+} from "../types/types";
+import UtilityEasingFunctions from "./easingFunctions";
+import { noop } from "./polyfills";
 
-  constructor(
-    private readonly _type: string[] | ((value: any) => boolean),
-    private readonly _error: Error
-  ) {}
+export default class TypeChecker implements ErrorList {
+  private static _INSTANCE: TypeChecker;
+  private _errors: TypeError[] = [];
 
-  public assert(value: any) {
-    if (value === undefined && !this._isRequired) {
+  public set errors(error: TypeError | null) {
+    if (!(error instanceof TypeError)) {
       return;
+    }
+    this._errors.push(error);
+  }
+
+  public get errors(): TypeError[] {
+    const errors = [...this._errors];
+    this._errors = [];
+    return errors;
+  }
+
+  public readonly optionTypeScheme: {
+    [option in keyof RequiredNumericalAnimatorCoreOptions]: TypeScheme;
+  } = Object.freeze({
+    start: this._createTypeScheme(Number, true, 0),
+    end: this._createTypeScheme(Number, true, 0),
+    duration: this._createTypeScheme(Number, true, 0),
+    easingFunction: this._createTypeScheme(
+      [String, Function],
+      false,
+      UtilityEasingFunctions.easeOutCubic
+    ),
+    decimalPlaces: this._createTypeScheme(Number, false, 0),
+    autoPlay: this._createTypeScheme(Boolean, false, false),
+    middleware: this._createTypeScheme(Array, false, []),
+    onChange: this._createTypeScheme(Function, false, noop),
+    onComplete: this._createTypeScheme(Function, false, noop),
+    onPlay: this._createTypeScheme(Function, false, noop),
+    onPause: this._createTypeScheme(Function, false, noop),
+    onUpdate: this._createTypeScheme(Function, false, noop),
+    onReset: this._createTypeScheme(Function, false, noop),
+    onStop: this._createTypeScheme(Function, false, noop),
+  });
+
+  constructor() {
+    if (!TypeChecker._INSTANCE) {
+      TypeChecker._INSTANCE = this;
+    }
+
+    return TypeChecker._INSTANCE;
+  }
+
+  private _createTypeScheme(
+    type: TypeConstructor | TypeConstructor[],
+    isRequired: boolean,
+    defaultVal: any
+  ): TypeScheme {
+    return Object.freeze({ type, isRequired, default: defaultVal });
+  }
+
+  private _createTypeError(
+    option: string,
+    receivedValue: any,
+    type: TypeConstructor | TypeConstructor[]
+  ): Error {
+    const typeName = (
+      Array.isArray(type) ? type.map((t) => t.name).join(" | ") : type.name
+    ).toLowerCase();
+    return new TypeError(
+      `Invalid assignment for type '${typeName}' in option '${option}'. Expected a valid ${typeName.replace(
+        "|",
+        "or"
+      )}, but received '${receivedValue}' (${typeof receivedValue}).`
+    );
+  }
+
+  private _checkType(
+    option: keyof NumericalAnimatorCoreOptions,
+    receivedValue: any,
+    type: TypeConstructor | TypeConstructor[]
+  ): TypeError | null {
+    const isOrType = Array.isArray(type);
+
+    if (receivedValue === null) {
+      return new TypeError(
+        `The value of '${option}' cannot be null. Please provide a valid value.`
+      );
     }
 
     if (
-      (Array.isArray(this._type) && !this._type.includes(typeof value)) ||
-      (!Array.isArray(this._type) &&
-        typeof this._type === "function" &&
-        !this._type(value))
+      receivedValue !== undefined &&
+      ((isOrType && type.every((t) => t !== receivedValue.constructor)) ||
+        (!isOrType && type !== receivedValue.constructor))
     ) {
-      console.error(this._error);
+      return this._createTypeError(option, receivedValue, type);
     }
-    this._isRequired = false;
+
+    return null;
   }
 
-  public required() {
-    this._isRequired = true;
-    return this;
+  private _assert(
+    option: keyof NumericalAnimatorCoreOptions,
+    receivedValue: any
+  ): TypeError | null {
+    const typeScheme = this.optionTypeScheme[option];
+    const { type, isRequired } = typeScheme;
+
+    if (isRequired && receivedValue === undefined) {
+      this.errors = new TypeError(`The option '${option}' is required.`);
+    }
+
+    return this._checkType(option, receivedValue, type);
+  }
+
+  public default<T extends keyof NumericalAnimatorCoreOptions>(
+    option: T
+  ): RequiredNumericalAnimatorCoreOptions[T] {
+    return this.optionTypeScheme[option].default;
+  }
+
+  public assert(
+    option: keyof NumericalAnimatorCoreOptions,
+    receivedValue: any
+  ) {
+    this.errors = this._assert(option, receivedValue);
+  }
+
+  public optional(
+    option: keyof NumericalAnimatorCoreOptions,
+    receivedValue: any
+  ) {
+    const typeScheme = this.optionTypeScheme[option];
+    const { type } = typeScheme;
+    this.errors = this._checkType(option, receivedValue, type);
+  }
+
+  public check(options: NumericalAnimatorCoreOptions) {
+    const keyOptions = Object.keys(
+      this.optionTypeScheme
+    ) as (keyof NumericalAnimatorCoreOptions)[];
+    for (const option of keyOptions) {
+      const value = options[option];
+      this.errors = this._assert(option, value);
+    }
   }
 }
-
-const requiredOptionsChecker = new Checker(
-  ["number"],
-  new Error("Invalid options: 'start', 'end', and 'duration' must be numbers.")
-);
-
-const createHookChecker = (hookName: string) =>
-  new Checker(
-    ["function"],
-    new Error(`Invalid options: '${hookName}' must be a function.`)
-  );
-
-const TypeChecker = Object.freeze({
-  start: requiredOptionsChecker,
-  end: requiredOptionsChecker,
-  duration: requiredOptionsChecker,
-  easingFunction: new Checker(
-    ["string", "function"],
-    new Error(
-      "Invalid options: 'easingFunction' must be a function or a string."
-    )
-  ),
-  decimalPlaces: new Checker(
-    ["number"],
-    new Error("Invalid options: 'decimalPlaces' must be a number.")
-  ),
-  autoPlay: new Checker(
-    ["boolean"],
-    new Error("Invalid options: 'autoPlay' must be a boolean.")
-  ),
-  middleware: new Checker(
-    (value) => Array.isArray(value),
-    new Error("Invalid options: 'middleware' must be an array of functions.")
-  ),
-  onValueChange: createHookChecker("onValueChange"),
-  onComplete: createHookChecker("onComplete"),
-  onPlay: createHookChecker("onPlay"),
-  onReset: createHookChecker("onReset"),
-});
-
-export default TypeChecker;
