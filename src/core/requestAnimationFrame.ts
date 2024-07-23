@@ -78,9 +78,7 @@ export default class RequestAnimationFrame {
     const index = this._animationFrameQueue.findIndex((af) => af.id === id);
 
     if (index === -1) {
-      throw new Error(
-        `Cannot remove animationFrame: frame with id ${id} does not exist.`
-      );
+      return;
     }
 
     callback();
