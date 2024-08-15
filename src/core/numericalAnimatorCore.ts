@@ -3,7 +3,6 @@ import UtilityEasingFunctions, {
   getEasingFunctionByName,
 } from "../utils/easingFunctions";
 import RequestAnimationFrame from "./requestAnimationFrame";
-import TypeChecker from "../utils/typeChecking";
 import {
   AnimationFrameUpdatedOptions,
   NumericalAnimatorCoreOptions,
@@ -11,15 +10,16 @@ import {
   EasingUtil,
   ErrorList,
   Middleware,
-} from "../types/types";
+} from "../types";
 import EventEmitter from "../events/eventsEmitter";
+import { Schemas } from "../schemas";
+import { Type } from "../utils/typeChecking";
 
 export default class NumericalAnimatorCore implements ErrorList {
-  private static readonly DEFAULT_EASING_FUNCTION: EasingFunction =
+  private static readonly _DEFAULT_EASING_FUNCTION: EasingFunction =
     UtilityEasingFunctions.easeOutCubic;
-  private static readonly MAX_DECIMAL_PLACES: number = 5;
+  private static readonly _MAX_DECIMAL_PLACES: number = 5;
 
-  private readonly _typeChecker = new TypeChecker();
   private readonly _rAF: RequestAnimationFrame = new RequestAnimationFrame();
   private _interruptTimestamp: number = 0;
   private _animationFrame: AnimationFrame | null = null;
@@ -31,16 +31,19 @@ export default class NumericalAnimatorCore implements ErrorList {
   private _end: number;
   private _duration: number;
   private _easingFunction: EasingFunction;
+  private _abortOnError: boolean;
+  private _debug: boolean;
   private _decimalPlaces: number;
   private _autoPlay: boolean;
   private readonly _middleware: Middleware[];
   private readonly _errors: Error[] = [];
 
   public set errors(error: Error | null) {
-    if (!error) {
+    if (!(error instanceof Error)) {
       return;
     }
     this._errors.push(error);
+    this.emitter.emit("error", error.message);
   }
 
   public get errors(): Error[] {
@@ -52,10 +55,10 @@ export default class NumericalAnimatorCore implements ErrorList {
   public readonly version = "1.0.0";
 
   constructor(options: NumericalAnimatorCoreOptions) {
-    this._validateOptions(options);
-    if (this.errors.length > 0) {
-      throw new Error("Invalid options provided to NumericalAnimatorCore.");
-    }
+    this._abortOnError = options?.abortOnError ?? false;
+    this._debug = options?.debug ?? false;
+
+    this._performSchemaValidation(Schemas.optionsSchema, options);
 
     const {
       start,
@@ -72,6 +75,7 @@ export default class NumericalAnimatorCore implements ErrorList {
       onReset,
       onUpdate,
       onStop,
+      onError,
     } = options;
 
     this._start = start;
@@ -79,16 +83,14 @@ export default class NumericalAnimatorCore implements ErrorList {
     this._duration = duration;
 
     this._easingFunction = this._getEasingFunction(
-      easingFunction ?? this._typeChecker.default("easingFunction")
+      easingFunction ?? NumericalAnimatorCore._DEFAULT_EASING_FUNCTION
     );
     this._decimalPlaces = Math.min(
-      decimalPlaces ?? this._typeChecker.default("decimalPlaces"),
-      NumericalAnimatorCore.MAX_DECIMAL_PLACES
+      decimalPlaces ?? 0,
+      NumericalAnimatorCore._MAX_DECIMAL_PLACES
     );
-    this._autoPlay = autoPlay ?? this._typeChecker.default("autoPlay");
-    this._middleware = [
-      ...(middleware ?? this._typeChecker.default("middleware")),
-    ];
+    this._autoPlay = autoPlay ?? false;
+    this._middleware = [...(middleware ?? [])];
 
     this.emitter.on("change", onChange);
     this.emitter.on("complete", onComplete);
@@ -97,28 +99,12 @@ export default class NumericalAnimatorCore implements ErrorList {
     this.emitter.on("reset", onReset);
     this.emitter.on("update", onUpdate);
     this.emitter.on("stop", onStop);
+    this.emitter.on("error", onError);
 
     if (this._autoPlay) {
       this.play();
     } else {
       this._rAF.increasePausedCounter();
-    }
-  }
-
-  private _validateOptions(options: NumericalAnimatorCoreOptions) {
-    if (!options) {
-      this.errors = new Error(
-        "Invalid argument: 'options' cannot be undefined or null. Please provide a valid AnimatorCoreOptions object."
-      );
-      return;
-    }
-
-    this._typeChecker.check(options);
-
-    const errors = this._typeChecker.errors;
-    if (errors.length > 0) {
-      this.errors.push(...errors);
-      return;
     }
   }
 
@@ -137,7 +123,7 @@ export default class NumericalAnimatorCore implements ErrorList {
       );
     }
 
-    return easingFunction ?? NumericalAnimatorCore.DEFAULT_EASING_FUNCTION;
+    return easingFunction ?? NumericalAnimatorCore._DEFAULT_EASING_FUNCTION;
   }
 
   private _stopAnimationFrame() {
@@ -191,22 +177,54 @@ export default class NumericalAnimatorCore implements ErrorList {
     this._interruptTimestamp = 0;
   }
 
+  private _performSchemaValidation<T extends Type.TypeValidatorSchema<any>>(
+    schema: T,
+    value: any
+  ) {
+    if (this._abortOnError) {
+      schema.validate(value);
+    } else {
+      const { ok, error } = schema.safeValidate(value);
+
+      if (error) {
+        this.errors = error;
+        this.printErrors();
+      }
+
+      return ok;
+    }
+  }
+
+  public printErrors() {
+    if (!this._debug) {
+      return;
+    }
+
+    this.errors.forEach((error) => {
+      console.error(error);
+    });
+  }
+
   public applyMiddleware(value: number): number | string {
     let modifiedValue: number | string = value;
-    if (this._middleware.length) {
-      for (const middleware of this._middleware) {
-        modifiedValue = middleware(modifiedValue);
 
-        if (
-          typeof modifiedValue !== "string" &&
-          typeof modifiedValue !== "number"
-        ) {
-          this.errors = new Error(
-            `The value returned by the middleware is invalid: '${middleware}'. It must be a number or a string.`
-          );
-          this.pause();
-          return 0;
+    if (this._middleware.length) {
+      for (let i = 0; i < this._middleware.length; i++) {
+        const middleware = this._middleware[i];
+        const { ok, value, error } = Schemas.modifiedValueSchema.safeValidate(
+          middleware(modifiedValue),
+          {
+            typeError: `The value returned by the middleware is invalid: \n\t${middleware}\nIt must be a number or a string. The middleware has been removed due to this invalid return value.`,
+          }
+        );
+
+        if (!ok) {
+          this._middleware.splice(i, 1);
+          console.warn(error.message);
+          return modifiedValue;
         }
+
+        modifiedValue = value;
       }
     }
 
@@ -218,7 +236,7 @@ export default class NumericalAnimatorCore implements ErrorList {
   }
 
   public play() {
-    if (this._isCountingStarted) {
+    if (this._isCountingStarted || this.errors.length) {
       return;
     }
 
@@ -235,22 +253,24 @@ export default class NumericalAnimatorCore implements ErrorList {
 
   public update(updatedOptions: AnimationFrameUpdatedOptions) {
     // Check if there is an animation frame before proceeding
-    if (!this._animationFrame) {
+    if (
+      !this._animationFrame ||
+      !Object.entries(updatedOptions ?? {})?.length
+    ) {
+      return;
+    }
+
+    if (
+      !this._performSchemaValidation(
+        Schemas.updatedOptionsSchema,
+        updatedOptions
+      )
+    ) {
       return;
     }
 
     const { end, duration, decimalPlaces, easingFunction } = updatedOptions;
 
-    this._typeChecker.optional("end", end);
-    this._typeChecker.optional("duration", duration);
-    this._typeChecker.optional("decimalPlaces", decimalPlaces);
-    this._typeChecker.optional("easingFunction", easingFunction);
-
-    const errors = this._typeChecker.errors;
-    if (errors.length > 0) {
-      this.errors.push(...errors);
-      return;
-    }
     // Update options with supplied values ​​or keep current ones
     this._end = end ?? this._end;
     this._decimalPlaces = decimalPlaces ?? this._decimalPlaces;
@@ -263,7 +283,7 @@ export default class NumericalAnimatorCore implements ErrorList {
 
     if (updatedOptions.easingFunction) {
       this._easingFunction = updatedOptions.easingFunction =
-        this._getEasingFunction(easingFunction);
+        this._getEasingFunction(easingFunction ?? this._easingFunction);
     }
 
     this.emitter.emit("update");
