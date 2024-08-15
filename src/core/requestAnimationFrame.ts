@@ -11,8 +11,6 @@ export default class RequestAnimationFrame {
   private _requestAnimationFrameId: number | null = null;
   private _pausedAnimationCounter: number = 0;
 
-  public readonly version = "1.0.0";
-
   public constructor() {
     if (!RequestAnimationFrame._INSTANCE) {
       RequestAnimationFrame._INSTANCE = this;
