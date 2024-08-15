@@ -1,4 +1,4 @@
-import { Listener, NumericalAnimatorEvents } from "../types/types";
+import { Listener, NumericalAnimatorEvents } from "../types";
 
 export default class EventEmitter {
   private readonly events: Map<NumericalAnimatorEvents, Listener[]> = new Map();
