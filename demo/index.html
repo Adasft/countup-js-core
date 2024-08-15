@@ -22,47 +22,15 @@
         maximumFractionDigits: 3,
       }).format;
 
-      const $numbers = document.querySelector("#numbers");
-      const animator = new NumericalAnimatorCore({
-        start: 10344000,
-        end: 90.334,
-        duration: 10,
-        // autoPlay: true,
-        decimalPlaces: 2,
-        easingFunction: UtilityEasingFunctions.easeOutSine,
-        onChange: (currentValue) => {
-          $numbers.textContent = currentValue;
-        },
-      });
-
-      animator.errors.forEach((error) => console.error(error));
-
-      // animator.addMiddleware((value) => format(value));
-
-      window.playAnimator = () => {
-        animator.play();
-      };
-
-      window.pauseAnimator = () => {
-        animator.pause();
-      };
-      window.resetAnimator = () => {
-        animator.reset();
-      };
-
-      window.updateAnimator = () => {
-        animator.update({
-          duration: 1,
-        });
-      };
-
       const $numbers2 = document.querySelector("#numbers2");
       const animator2 = new NumericalAnimatorCore({
         start: 0,
         end: 100,
         duration: 30,
+        abortOnError: false,
         autoPlay: true,
         decimalPlaces: 4,
+        debug: true,
         easingFunction: "easeInOutQuart",
         middleware: [
           (value) =>
@@ -80,7 +48,7 @@
         },
       });
 
-      animator2.errors.forEach((error) => console.error(error));
+      // animator2.errors.forEach((error) => console.error(error));
 
       window.animator2 = animator2;
 
@@ -107,13 +75,46 @@
       window.updateAnimator2 = () => {
         animator2.update({
           end: 10,
-          easingFunction: "linear",
           duration: 2,
         });
       };
 
       window.stop = () => {
         animator2.stop();
+      };
+
+      const $numbers = document.querySelector("#numbers");
+      const animator = new NumericalAnimatorCore({
+        start: 10344000,
+        end: 90.334,
+        duration: 10,
+        autoPlay: true,
+        decimalPlaces: 2,
+        easingFunction: UtilityEasingFunctions.easeOutSine,
+        onChange: (currentValue) => {
+          $numbers.textContent = currentValue;
+        },
+      });
+
+      animator.errors.forEach((error) => console.error(error));
+
+      // animator.addMiddleware((value) => format(value));
+
+      window.playAnimator = () => {
+        animator.play();
+      };
+
+      window.pauseAnimator = () => {
+        animator.pause();
+      };
+      window.resetAnimator = () => {
+        animator.reset();
+      };
+
+      window.updateAnimator = () => {
+        animator.update({
+          duration: 1,
+        });
       };
     </script>
   </head>
