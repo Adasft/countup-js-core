@@ -2,7 +2,7 @@ import {
   AnimationFrameOptions,
   AnimationFrameUpdatedOptions,
   EasingFunction,
-} from "../types/types";
+} from "../types";
 
 export default class AnimationFrame {
   public static currentAnimationFrameId: number = 0;
