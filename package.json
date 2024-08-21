@@ -28,5 +28,12 @@
     "ts-jest": "^29.2.2",
     "tslib": "^2.6.3",
     "typescript": "^5.5.3"
-  }
+  },
+  "git-repository": "https://github.com/Adasft/countup-js-core.git",
+  "keywords": [
+    "countup",
+    "countup-js",
+    "countup-js-core",
+    "numerical animation"
+  ]
 }
