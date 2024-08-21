@@ -30,9 +30,9 @@ npm install countup-js-core
 Here is a basic example of how to use the CountUp JS Core library to animate numerical values:
 
 ```javascript
-import { NumericalAnimatorCore } from "countup-js-core";
+import { CountUp } from "countup-js-core";
 
-const animator = new NumericalAnimatorCore({
+const animator = new CountUp.NumericalAnimatorCore({
   start: 0,
   end: 100,
   duration: 5,
@@ -49,7 +49,7 @@ animator.play();
 1. Import Necessary Modules:
 
 ```javascript
-import { NumericalAnimatorCore } from "countup-js-core";
+import { CountUp } from "countup-js-core";
 ```
 
 Here we import the `NumericalAnimatorCore` class from the `countup-js-core` library.
@@ -57,7 +57,7 @@ Here we import the `NumericalAnimatorCore` class from the `countup-js-core` libr
 2. Create an Instance of NumericalAnimatorCore:
 
 ```javascript
-const animator = new NumericalAnimatorCore({
+const animator = new CountUp.NumericalAnimatorCore({
   start: 0,
   end: 100,
   duration: 5,
@@ -90,7 +90,7 @@ This example demonstrates how to set up and run a simple animation using CountUp
 #### Constructor
 
 ```javascript
-new NumericalAnimatorCore(options: NumericalAnimatorCoreOptions);
+new CountUp.NumericalAnimatorCore(options: NumericalAnimatorCoreOptions);
 ```
 
 #### Parameters
@@ -132,11 +132,11 @@ type AnimationFrameUpdatedOptions = {
 };
 ```
 
-#### EasingUtil
+#### UtilityEasingFunctions
 
 ```ts
 type EasingFunction = (t: number) => number;
-type EasingUtil {
+type UtilityEasingFunctions {
   linear: EasingFunction;
   easeOutCubic: EasingFunction;
   easeInQuad: EasingFunction;
@@ -190,12 +190,13 @@ type EasingUtil {
 ### Basic Animation
 
 ```javascript
-import { NumericalAnimatorCore } from "countup-js-core";
+import { CountUp } from "countup-js-core";
 
-const animator = new NumericalAnimatorCore({
+const animator = new CountUp.NumericalAnimatorCore({
   start: 0,
   end: 200,
   duration: 10,
+  easingFunction: CountUp.EasingUtil.easeInOutSine,
   onChange: (value) => {
     console.log(`Current Value: ${value}`);
   },
@@ -212,9 +213,9 @@ animator.play();
 Middlewares are functions that process the value before calling `onChange()`. They return the processed value, which must be a number or a string.
 
 ```javascript
-import { NumericalAnimatorCore } from "countup-js-core";
+import { CountUp } from "countup-js-core";
 
-const animator = new NumericalAnimatorCore({
+const animator = new CountUp.NumericalAnimatorCore({
   start: 0,
   end: 100,
   duration: 5,

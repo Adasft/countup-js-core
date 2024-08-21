@@ -5,7 +5,7 @@ export type EasingFunction = Type.Infer<
   typeof Schemas.easingFunctionHandlerSchema
 >;
 
-export type EasingUtil = {
+export type UtilityEasingFunctions = {
   [key in Type.Infer<typeof Schemas.easingFunctionNameSchema>]: EasingFunction;
 };
 

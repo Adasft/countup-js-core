@@ -1,13 +1,11 @@
 import AnimationFrame from "./animationFrame";
-import UtilityEasingFunctions, {
-  getEasingFunctionByName,
-} from "../utils/easingFunctions";
+import EasingUtils, { getEasingFunctionByName } from "../utils/easingFunctions";
 import RequestAnimationFrame from "./requestAnimationFrame";
 import {
   AnimationFrameUpdatedOptions,
   NumericalAnimatorCoreOptions,
   EasingFunction,
-  EasingUtil,
+  UtilityEasingFunctions,
   ErrorList,
   Middleware,
 } from "../types";
@@ -17,7 +15,7 @@ import { Type } from "../utils/typeChecking";
 
 export default class NumericalAnimatorCore implements ErrorList {
   private static readonly _DEFAULT_EASING_FUNCTION: EasingFunction =
-    UtilityEasingFunctions.easeOutCubic;
+    EasingUtils.easeOutCubic;
   private static readonly _MAX_DECIMAL_PLACES: number = 5;
 
   private readonly _rAF: RequestAnimationFrame = new RequestAnimationFrame();
@@ -109,7 +107,7 @@ export default class NumericalAnimatorCore implements ErrorList {
   }
 
   private _getEasingFunction(
-    easingFunctionOrName: EasingFunction | keyof EasingUtil
+    easingFunctionOrName: EasingFunction | keyof UtilityEasingFunctions
   ) {
     if (typeof easingFunctionOrName === "function") {
       return easingFunctionOrName;

@@ -1,4 +1,4 @@
 import NumericalAnimatorCore from "./core/numericalAnimatorCore";
-import UtilityEasingFunctions from "./utils/easingFunctions";
+import EasingUtils from "./utils/easingFunctions";
 
-export { NumericalAnimatorCore, UtilityEasingFunctions };
+export { NumericalAnimatorCore, EasingUtils };
